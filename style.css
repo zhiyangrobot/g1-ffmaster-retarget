@@ -52,26 +52,21 @@ html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; }
   margin-top: 4px;
   line-height: 1.35;
 }
-.brand-cta {
-  margin-top: 8px;
-  margin-bottom: 4px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid #9bb0cc;
-  background: linear-gradient(180deg, #eef3fa 0%, #e2eaf5 100%);
-  font-size: 0.8rem;
+.brand-highlight {
+  margin-top: 6px;
+  font-size: 0.82rem;
   font-weight: 700;
-  color: #2a4366;
+  color: #1a1a1a;
   line-height: 1.4;
   word-break: break-all;
 }
-.brand-cta a {
+.brand-highlight a {
   color: #1d4f91;
   font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-.brand-cta a:hover {
+.brand-highlight a:hover {
   color: #0f3a70;
 }
 .brand-sub {
