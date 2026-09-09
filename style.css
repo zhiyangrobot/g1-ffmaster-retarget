@@ -53,34 +53,26 @@ html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; }
   line-height: 1.35;
 }
 .brand-cta {
-  display: block;
   margin-top: 8px;
   margin-bottom: 4px;
   padding: 8px 10px;
   border-radius: 8px;
   border: 1px solid #9bb0cc;
   background: linear-gradient(180deg, #eef3fa 0%, #e2eaf5 100%);
-  color: #2a4366;
-  text-decoration: none;
-  line-height: 1.3;
-}
-.brand-cta:hover {
-  border-color: var(--accent);
-  background: linear-gradient(180deg, #e4ecf8 0%, #d5e1f0 100%);
-  text-decoration: none;
-}
-.brand-cta-label {
-  display: block;
-  font-size: 0.88rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  letter-spacing: 0.01em;
+  color: #2a4366;
+  line-height: 1.4;
+  word-break: break-all;
 }
-.brand-cta-sub {
-  display: block;
-  margin-top: 2px;
-  font-size: 0.7rem;
-  color: #4a5d78;
-  word-break: break-word;
+.brand-cta a {
+  color: #1d4f91;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.brand-cta a:hover {
+  color: #0f3a70;
 }
 .brand-sub {
   font-size: 0.72rem;
