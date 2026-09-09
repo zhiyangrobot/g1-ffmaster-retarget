@@ -3,7 +3,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 // Bright studio stage: light grey backdrop (less gloomy), soft checker floor, strong key.
 const G1_Y = -0.85;
-const X2_Y = 0.85;
+const FF_MASTER_Y = 0.85;
 const STAGE_BG = 0xd8dce3; // light studio grey
 const GROUND = 0xb8bec8;
 
@@ -41,7 +41,7 @@ let frame = 0;
 let accum = 0;
 let speed = 1;
 let lastTs = performance.now();
-let showMode = "both"; // both | g1 | x2
+let showMode = "both"; // both | g1 | ff_master
 
 const renderer = new THREE.WebGLRenderer({
   canvas: el.canvas,
@@ -130,13 +130,13 @@ axes.position.z = 0.012;
 scene.add(axes);
 
 const g1Root = new THREE.Group();
-const x2Root = new THREE.Group();
+const ffMasterRoot = new THREE.Group();
 g1Root.position.y = G1_Y;
-x2Root.position.y = X2_Y;
-scene.add(g1Root, x2Root);
+ffMasterRoot.position.y = FF_MASTER_Y;
+scene.add(g1Root, ffMasterRoot);
 
 let g1Nodes = {};
-let x2Nodes = {};
+let ffMasterNodes = {};
 const _pos = new THREE.Vector3();
 const _quat = new THREE.Quaternion();
 const _scale = new THREE.Vector3(1, 1, 1);
@@ -171,8 +171,8 @@ function splitClipId(id) {
   return { category: cat, name };
 }
 
-function brightenX2VertexColors(geometry) {
-  // White shells should read white (official X2 look); keep dark joints + orange feet.
+function brightenFfMasterVertexColors(geometry) {
+  // White shells should read white (FF Master look); keep dark joints + orange feet.
   const attr = geometry.getAttribute("color");
   if (!attr) return;
   for (let i = 0; i < attr.count; i++) {
@@ -201,7 +201,7 @@ function prepareRobotMaterials(root, { whiten = false } = {}) {
     obj.castShadow = true;
     obj.receiveShadow = true;
     if (obj.geometry) {
-      if (whiten) brightenX2VertexColors(obj.geometry);
+      if (whiten) brightenFfMasterVertexColors(obj.geometry);
       obj.geometry.deleteAttribute("normal");
       obj.geometry.computeVertexNormals();
     }
@@ -278,7 +278,7 @@ function applyFrame(nodes, data, frameIdx) {
 function setShowMode(mode) {
   showMode = mode;
   g1Root.visible = mode === "both" || mode === "g1";
-  x2Root.visible = mode === "both" || mode === "x2";
+  ffMasterRoot.visible = mode === "both" || mode === "ff_master";
   document.querySelectorAll(".model-btn").forEach((b) => {
     b.classList.toggle("active", b.dataset.mode === mode);
   });
@@ -288,14 +288,14 @@ function setShowMode(mode) {
 
 function centerRoots() {
   if (!clip) return;
-  const ox = 0.5 * (clip.g1.xforms[0] + clip.x2.xforms[0]);
+  const ox = 0.5 * (clip.g1.xforms[0] + clip.ff_master.xforms[0]);
   if (showMode === "both") {
     g1Root.position.set(-ox, G1_Y, 0);
-    x2Root.position.set(-ox, X2_Y, 0);
+    ffMasterRoot.position.set(-ox, FF_MASTER_Y, 0);
   } else if (showMode === "g1") {
     g1Root.position.set(-clip.g1.xforms[0], 0, 0);
   } else {
-    x2Root.position.set(-clip.x2.xforms[0], 0, 0);
+    ffMasterRoot.position.set(-clip.ff_master.xforms[0], 0, 0);
   }
 }
 
@@ -422,13 +422,16 @@ async function loadClip(entry) {
   if (!res.ok) throw new Error(`Failed to load ${entry.file}`);
   const data = await res.json();
   const g1 = decodeXforms(data.g1);
-  const x2 = decodeXforms(data.x2);
+  // Prefer ff_master; accept legacy bake key if present.
+  const ffRaw = data.ff_master || data.x2;
+  if (!ffRaw) throw new Error("clip missing ff_master motion");
+  const ff_master = decodeXforms(ffRaw);
   clip = {
     name: data.name,
     fps: data.fps || manifest.fps,
-    frames: Math.min(g1.frames, x2.frames),
+    frames: Math.min(g1.frames, ff_master.frames),
     g1,
-    x2,
+    ff_master,
   };
   centerRoots();
   frame = 0;
@@ -455,9 +458,9 @@ async function setClipIndex(i) {
 function drawFrame(f) {
   if (!clip) return;
   applyFrame(g1Nodes, clip.g1, f);
-  applyFrame(x2Nodes, clip.x2, f);
+  applyFrame(ffMasterNodes, clip.ff_master, f);
   g1Root.updateMatrixWorld(true);
-  x2Root.updateMatrixWorld(true);
+  ffMasterRoot.updateMatrixWorld(true);
   el.timeLabel.textContent = `${f} / ${clip.frames - 1}`;
   el.scrub.value = String(f);
 }
@@ -549,12 +552,13 @@ async function boot() {
     return;
   }
   manifest = await res.json();
-  // Keep brand fixed even if manifest.title is an old "X2" string.
+  // Keep brand fixed even if manifest.title is stale.
   el.title.textContent = brandTitle;
   document.title = brandTitle;
   el.status.textContent = "Loading meshes…";
   g1Nodes = await loadRobotGlb(assetUrl(manifest.models.g1), g1Root);
-  x2Nodes = await loadRobotGlb(assetUrl(manifest.models.x2), x2Root, { whiten: true });
+  const ffMesh = (manifest.models && manifest.models.ff_master) || "models/ff_master.glb";
+  ffMasterNodes = await loadRobotGlb(assetUrl(ffMesh), ffMasterRoot, { whiten: true });
   applyFilter();
   requestAnimationFrame(tick);
 }
