@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Unitree G1 → FF Master Retargeter</title>
+  <link rel="stylesheet" href="style.css?v=ff-master-v9" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three.module.min.js",
+      "three/addons/": "./vendor/addons/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <aside id="left">
+      <header class="brand-bar">
+        <div class="logo-mark" aria-hidden="true"></div>
+        <div>
+          <div class="brand-title" id="title">Unitree G1 → FF Master Retargeter</div>
+          <div class="brand-tagline">
+            Converts Unitree G1 CSV joint data into FF Master joint animation.
+          </div>
+          <div class="brand-sub">
+            Original data:
+            <a href="https://chingmudata.github.io/MotionDecode/" target="_blank" rel="noopener">chingmudata.github.io/MotionDecode</a>
+          </div>
+          <div class="brand-sub">
+            Unitree G1 CSV:
+            <a href="https://huggingface.co/datasets/CMRobot/MotionDecode" target="_blank" rel="noopener">huggingface.co/datasets/CMRobot/MotionDecode</a>
+          </div>
+          <div class="brand-sub">
+            Retarget tool:
+            <a href="https://github.com/NVIDIA/soma-retargeter" target="_blank" rel="noopener">github.com/NVIDIA/soma-retargeter</a>
+          </div>
+        </div>
+      </header>
+
+      <section class="panel" id="browser-panel">
+        <div class="panel-head">
+          <span>Moves</span>
+          <input id="filter" type="search" placeholder="Search category or name…" autocomplete="off" />
+        </div>
+        <div class="table-wrap">
+          <table id="clip-table">
+            <thead>
+              <tr><th>Category</th><th>Move name</th></tr>
+            </thead>
+            <tbody id="clip-body"></tbody>
+          </table>
+        </div>
+        <div class="panel-foot" id="clip-count">0 clips</div>
+      </section>
+
+      <section class="panel" id="meta-panel">
+        <div class="panel-head"><span>Metadata</span></div>
+        <dl id="meta-list" class="meta-list">
+          <div><dt>move_name</dt><dd id="m-name">—</dd></div>
+          <div><dt>category</dt><dd id="m-cat">—</dd></div>
+          <div><dt>frames</dt><dd id="m-frames">—</dd></div>
+          <div><dt>duration</dt><dd id="m-dur">—</dd></div>
+          <div><dt>fps</dt><dd id="m-fps">—</dd></div>
+          <div><dt>robots</dt><dd>Unitree G1 (MotionDecode) · FF Master retargeted</dd></div>
+          <div><dt>g1_csv</dt><dd id="m-g1-link">—</dd></div>
+          <div><dt>original</dt><dd>
+            <a href="https://chingmudata.github.io/MotionDecode/" target="_blank" rel="noopener">https://chingmudata.github.io/MotionDecode/</a>
+          </dd></div>
+          <div><dt>dataset</dt><dd>
+            <a href="https://huggingface.co/datasets/CMRobot/MotionDecode" target="_blank" rel="noopener">https://huggingface.co/datasets/CMRobot/MotionDecode</a>
+          </dd></div>
+          <div><dt>retarget_tool</dt><dd>
+            <a href="https://github.com/NVIDIA/soma-retargeter" target="_blank" rel="noopener">https://github.com/NVIDIA/soma-retargeter</a>
+          </dd></div>
+        </dl>
+      </section>
+    </aside>
+
+    <main id="viewport-wrap">
+      <canvas id="stage" tabindex="0"></canvas>
+
+      <div id="upperbar">
+        <button type="button" id="btn-grid" class="icon-btn" title="Toggle grid">▦</button>
+        <button type="button" id="btn-center" class="icon-btn" title="Frame robots">◎</button>
+        <div id="view-cube" title="Click a face to set camera">
+          <button data-view="front" type="button">Front</button>
+          <button data-view="right" type="button">Right</button>
+          <button data-view="top" type="button">Top</button>
+          <button data-view="back" type="button">Back</button>
+          <button data-view="left" type="button">Left</button>
+          <button data-view="persp" type="button">3/4</button>
+        </div>
+        <div id="model-selector">
+          <button type="button" class="model-btn active" data-mode="both" title="Both">Both</button>
+          <button type="button" class="model-btn" data-mode="g1" title="Unitree G1 only">Unitree G1</button>
+          <button type="button" class="model-btn" data-mode="x2" title="FF Master only">FF Master</button>
+        </div>
+      </div>
+
+      <div id="timeline">
+        <button type="button" id="btn-prev" title="Previous clip">⏮</button>
+        <button type="button" id="btn-play" title="Play / Pause">⏸</button>
+        <button type="button" id="btn-next" title="Next clip">⏭</button>
+        <span id="time-label">0 / 0</span>
+        <input id="scrub" type="range" min="0" max="0" step="1" value="0" />
+        <label class="loop"><input id="loop" type="checkbox" checked /> Loop</label>
+        <label class="speed">
+          <input id="speed" type="range" min="0.25" max="2" step="0.25" value="1" />
+          <span id="speed-label">1×</span>
+        </label>
+      </div>
+
+      <div id="status">Loading…</div>
+    </main>
+  </div>
+
+  <script type="module" src="viewer.js?v=ff-master-v9"></script>
+</body>
+</html>
