@@ -422,10 +422,8 @@ async function loadClip(entry) {
   if (!res.ok) throw new Error(`Failed to load ${entry.file}`);
   const data = await res.json();
   const g1 = decodeXforms(data.g1);
-  // Prefer ff_master; accept legacy bake key if present.
-  const ffRaw = data.ff_master || data.x2;
-  if (!ffRaw) throw new Error("clip missing ff_master motion");
-  const ff_master = decodeXforms(ffRaw);
+  if (!data.ff_master) throw new Error("clip missing ff_master motion");
+  const ff_master = decodeXforms(data.ff_master);
   clip = {
     name: data.name,
     fps: data.fps || manifest.fps,
