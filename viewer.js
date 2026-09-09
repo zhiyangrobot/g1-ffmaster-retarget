@@ -30,6 +30,7 @@ const el = {
   mDur: document.getElementById("m-dur"),
   mFps: document.getElementById("m-fps"),
   mG1Link: document.getElementById("m-g1-link"),
+  mFfLink: document.getElementById("m-ff-link"),
 };
 
 let manifest = null;
@@ -394,6 +395,9 @@ function applyFilter() {
 const G1_HF_DATASET = "CMRobot/MotionDecode";
 const G1_HF_CSV = (relCsv) =>
   `https://huggingface.co/datasets/${G1_HF_DATASET}/resolve/main/samples/${String(relCsv).replace(/^\/+/, "")}`;
+const FF_HF_DATASET = "zhiyangrobot/g1-ffmaster-retarget";
+const FF_HF_CSV = (relCsv) =>
+  `https://huggingface.co/datasets/${FF_HF_DATASET}/resolve/main/csv/ff_master/${String(relCsv).replace(/^\/+/, "")}`;
 
 function updateMeta(entry) {
   const { category, name } = splitClipId(entry.id);
@@ -405,6 +409,10 @@ function updateMeta(entry) {
   if (el.mG1Link) {
     const url = G1_HF_CSV(entry.id);
     el.mG1Link.innerHTML = `<a href="${url}" target="_blank" rel="noopener">Download Unitree G1 CSV</a>`;
+  }
+  if (el.mFfLink) {
+    const url = FF_HF_CSV(entry.id);
+    el.mFfLink.innerHTML = `<a href="${url}" target="_blank" rel="noopener">Download FF Master CSV</a>`;
   }
 }
 
