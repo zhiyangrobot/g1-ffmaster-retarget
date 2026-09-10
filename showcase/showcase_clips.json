@@ -1,0 +1,69 @@
+{
+  "fps": 40,
+  "model": "https://huggingface.co/datasets/zhiyangrobot/g1-ffmaster-retarget/resolve/main/models/ff_master.glb",
+  "clips": [
+    {
+      "file": "data/clips/00_DB_Basic_Gait_00099.json",
+      "label": "DB Basic Gait 00099",
+      "x": -2.2,
+      "y": -2.2,
+      "id": "1.7.Daily_Life_Behaviors/1.7.3.Locomotion_and_Posture_Change/1.7.3.1.Basic_Gait/DB_Basic_Gait_00099.csv"
+    },
+    {
+      "file": "data/clips/01_BG_Leaping_over_00504.json",
+      "label": "BG Leaping over 00504",
+      "x": 0.0,
+      "y": -2.2,
+      "id": "1.3.Basic_Gait_Category/1.3.4.Jumping_Movement/1.3.4.2.Leaping_over/BG_Leaping_over_00504.csv"
+    },
+    {
+      "file": "data/clips/02_BG_Sprint_run_00145.json",
+      "label": "BG Sprint run 00145",
+      "x": 2.2,
+      "y": -2.2,
+      "id": "1.3.Basic_Gait_Category/1.3.3.Medium_Speed_Running_Sprinting/1.3.3.2.Sprint_run/BG_Sprint_run_00145.csv"
+    },
+    {
+      "file": "data/clips/03_DB_Family_Interaction_and_Light_Socializing_00020.json",
+      "label": "DB Family Interaction and Light Socializ",
+      "x": -2.2,
+      "y": 0.0,
+      "id": "1.7.Daily_Life_Behaviors/1.7.6.Family_and_Light_Social_Behaviors/1.7.6.3.Family_Interaction_and_Light_Socializing/DB_Family_Interaction_and_Light_Socializing_00020.csv"
+    },
+    {
+      "file": "data/clips/04_SII_Bowing_00022.json",
+      "label": "SII Bowing 00022",
+      "x": 0.0,
+      "y": 0.0,
+      "id": "1.8.Social_and_Interpersonal_Interaction/1.8.1.Basic_Greetings_and_Etiquette/1.8.1.3.Bowing/SII_Bowing_00022.csv"
+    },
+    {
+      "file": "data/clips/05_DB_Door_Opening_and_Closing_Actions_00030.json",
+      "label": "DB Door Opening and Closing Actions 0003",
+      "x": 2.2,
+      "y": 0.0,
+      "id": "1.7.Daily_Life_Behaviors/1.7.5.Home_Appliance_and_Living_Tool_Operation/1.7.5.4.Door_Opening_and_Closing_Actions/DB_Door_Opening_and_Closing_Actions_00030.csv"
+    },
+    {
+      "file": "data/clips/06_BM_Basketball_Throw_00001.json",
+      "label": "BM Basketball Throw 00001",
+      "x": -2.2,
+      "y": 2.2,
+      "id": "1.1.Basic_Movement_Category/1.1.3.Throwing_Actions/1.1.3.1.Basketball_Throw/BM_Basketball_Throw_00001.csv"
+    },
+    {
+      "file": "data/clips/07_ST_Speed_Transition_01072.json",
+      "label": "ST Speed Transition 01072",
+      "x": 0.0,
+      "y": 2.2,
+      "id": "1.2.State_Transition_Category/1.2.1.Speed_Transition(Still_Walk_Run_Stop)/ST_Speed_Transition_01072.csv"
+    },
+    {
+      "file": "data/clips/08_SII_Object_Handing_00262.json",
+      "label": "SII Object Handing 00262",
+      "x": 2.2,
+      "y": 2.2,
+      "id": "1.8.Social_and_Interpersonal_Interaction/1.8.4.Object_Passing_and_Interaction/1.8.4.1.Object_Handing/SII_Object_Handing_00262.csv"
+    }
+  ]
+}
