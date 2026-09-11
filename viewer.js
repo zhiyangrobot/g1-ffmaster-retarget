@@ -1,6 +1,5 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 // Bright studio stage: light grey backdrop (less gloomy), soft checker floor, strong key.
 const G1_Y = -0.85;
@@ -310,28 +309,37 @@ function resize() {
   camera.updateProjectionMatrix();
 }
 
-// Same orbit feel as SEED viewer (https://seed-viewer.bones.studio/):
-// stock Three.js OrbitControls — drag direction moves the model with the cursor.
-const controls = new OrbitControls(camera, el.canvas);
-controls.target.set(0, 0, 0.85);
-controls.enableDamping = false;
-controls.rotateSpeed = 1.0;
-controls.minDistance = 1.4;
-controls.maxDistance = 14;
-// Elevation limits ≈ our old pitch range [-0.15, 1.4] under Z-up.
-controls.minPolarAngle = Math.PI / 2 - 1.4;
-controls.maxPolarAngle = Math.PI / 2 - (-0.15);
-controls.update();
+// Screen-space orbit (not world-up turntable): horizontal drag only moves
+// left/right on screen; vertical drag only moves up/down. Avoids the
+// "drag left but pitch also changes" coupling of Z-up OrbitControls.
+const orbit = {
+  target: new THREE.Vector3(0, 0, 0.85),
+  dragging: false,
+  lastX: 0,
+  lastY: 0,
+  minR: 1.4,
+  maxR: 14,
+  minPitch: -0.15,
+  maxPitch: 1.4,
+};
+const _offset = new THREE.Vector3();
+const _axis = new THREE.Vector3();
+const _worldUp = new THREE.Vector3(0, 0, 1);
+
+function applyCamera() {
+  camera.up.copy(_worldUp);
+  camera.lookAt(orbit.target);
+}
 
 function placeOrbit(yaw, pitch, radius) {
   const cp = Math.cos(pitch);
   const sp = Math.sin(pitch);
   camera.position.set(
-    controls.target.x + radius * cp * Math.cos(yaw),
-    controls.target.y + radius * cp * Math.sin(yaw),
-    controls.target.z + radius * sp,
+    orbit.target.x + radius * cp * Math.cos(yaw),
+    orbit.target.y + radius * cp * Math.sin(yaw),
+    orbit.target.z + radius * sp,
   );
-  controls.update();
+  applyCamera();
 }
 
 function setView(name) {
@@ -347,6 +355,68 @@ function setView(name) {
   const v = map[name] || map.persp;
   placeOrbit(v.yaw, v.pitch, v.r);
 }
+
+function pitchFromOffset(offset) {
+  const r = offset.length();
+  if (r < 1e-6) return 0;
+  return Math.asin(THREE.MathUtils.clamp(offset.z / r, -1, 1));
+}
+
+function orbitByScreenDelta(dx, dy) {
+  const h = Math.max(1, el.canvas.clientHeight);
+  // Same angular scale as Three.js OrbitControls.
+  const sx = (2 * Math.PI * dx) / h;
+  const sy = (2 * Math.PI * dy) / h;
+
+  _offset.copy(camera.position).sub(orbit.target);
+
+  // Horizontal: rotate about camera screen-up → pure left/right on screen.
+  _axis.set(0, 1, 0).transformDirection(camera.matrixWorld).normalize();
+  _offset.applyAxisAngle(_axis, -sx);
+  camera.position.copy(orbit.target).add(_offset);
+  applyCamera();
+
+  // Vertical: rotate about camera screen-right → pure up/down on screen.
+  _offset.copy(camera.position).sub(orbit.target);
+  const before = _offset.clone();
+  _axis.set(1, 0, 0).transformDirection(camera.matrixWorld).normalize();
+  _offset.applyAxisAngle(_axis, -sy);
+  const pitch = pitchFromOffset(_offset);
+  if (pitch >= orbit.minPitch && pitch <= orbit.maxPitch) {
+    camera.position.copy(orbit.target).add(_offset);
+  } else {
+    camera.position.copy(orbit.target).add(before);
+  }
+  applyCamera();
+}
+
+el.canvas.addEventListener("pointerdown", (e) => {
+  if (e.button !== 0) return;
+  orbit.dragging = true;
+  orbit.lastX = e.clientX;
+  orbit.lastY = e.clientY;
+  el.canvas.setPointerCapture(e.pointerId);
+});
+el.canvas.addEventListener("pointerup", (e) => {
+  orbit.dragging = false;
+  try { el.canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+});
+el.canvas.addEventListener("pointermove", (e) => {
+  if (!orbit.dragging) return;
+  const dx = e.clientX - orbit.lastX;
+  const dy = e.clientY - orbit.lastY;
+  orbit.lastX = e.clientX;
+  orbit.lastY = e.clientY;
+  orbitByScreenDelta(dx, dy);
+});
+el.canvas.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  _offset.copy(camera.position).sub(orbit.target);
+  const next = _offset.length() * (e.deltaY > 0 ? 1.08 : 0.92);
+  _offset.setLength(THREE.MathUtils.clamp(next, orbit.minR, orbit.maxR));
+  camera.position.copy(orbit.target).add(_offset);
+  applyCamera();
+}, { passive: false });
 
 function renderTable() {
   el.clipBody.innerHTML = "";
@@ -498,7 +568,7 @@ el.speed.addEventListener("input", () => {
 el.filter.addEventListener("input", applyFilter);
 el.btnGrid.addEventListener("click", () => { grid.visible = !grid.visible; });
 el.btnCenter.addEventListener("click", () => {
-  controls.target.set(0, 0, 0.85);
+  orbit.target.set(0, 0, 0.85);
   setView("persp");
 });
 document.querySelectorAll("#view-cube button").forEach((b) => {
