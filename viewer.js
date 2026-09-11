@@ -364,9 +364,10 @@ el.canvas.addEventListener("pointermove", (e) => {
   const dy = e.clientY - orbit.lastY;
   orbit.lastX = e.clientX;
   orbit.lastY = e.clientY;
-  // Grab semantics: drag left/down → content moves left/down.
-  orbit.yaw -= dx * 0.005;
-  orbit.pitch = Math.min(Math.max(orbit.pitch + dy * 0.005, -0.15), 1.4);
+  // Grab the scene: content follows the cursor (opposite of OrbitControls).
+  // Drag left → content left; drag down → content down.
+  orbit.yaw += dx * 0.005;
+  orbit.pitch = Math.min(Math.max(orbit.pitch - dy * 0.005, -0.15), 1.4);
   syncCamera();
 });
 el.canvas.addEventListener("wheel", (e) => {
