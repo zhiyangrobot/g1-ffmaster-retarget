@@ -1,12 +1,11 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-// Mist studio: floor and void share one cool-stone palette so the stage
-// dissolves into atmosphere (inspired by cohesive studio viewers, not a copy).
+// Apple-like product studio: bright near-white void + seamless matte floor.
 const G1_Y = -0.85;
 const FF_MASTER_Y = 0.85;
-const STAGE_BG = 0xe4e7ec;   // soft mist void
-const FLOOR_TINT = 0xd5dae2; // same family, a touch denser underfoot
+const STAGE_BG = 0xf5f5f7;   // Apple system light grey
+const FLOOR_COLOR = 0xf0f0f2; // barely darker than void — almost one surface
 
 const el = {
   title: document.getElementById("title"),
@@ -60,14 +59,14 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(STAGE_BG);
-scene.fog = new THREE.Fog(STAGE_BG, 9, 26);
+scene.fog = new THREE.Fog(STAGE_BG, 14, 36);
 const camera = new THREE.PerspectiveCamera(35, 1, 0.05, 80);
 camera.up.set(0, 0, 1);
 
-// Sky/ground of the hemisphere match the mist palette so lighting isn't a hard seam.
-scene.add(new THREE.HemisphereLight(0xf4f6f9, 0xc2c7d0, 1.15));
-const key = new THREE.DirectionalLight(0xffffff, 1.85);
-key.position.set(0.2, -0.35, 0.85).normalize().multiplyScalar(12);
+// Soft, even product lighting — bright, low drama.
+scene.add(new THREE.HemisphereLight(0xffffff, 0xe8e8ed, 1.25));
+const key = new THREE.DirectionalLight(0xffffff, 1.55);
+key.position.set(0.25, -0.4, 0.9).normalize().multiplyScalar(12);
 key.castShadow = true;
 key.shadow.mapSize.set(2048, 2048);
 key.shadow.camera.left = -5;
@@ -77,76 +76,44 @@ key.shadow.camera.bottom = -5;
 key.shadow.camera.near = 0.5;
 key.shadow.camera.far = 30;
 key.shadow.bias = -0.0002;
-key.shadow.normalBias = 0.02;
-key.shadow.radius = 5;
+key.shadow.normalBias = 0.025;
+key.shadow.radius = 6;
 scene.add(key);
-const fill = new THREE.DirectionalLight(0xeef2f7, 0.7);
+const fill = new THREE.DirectionalLight(0xffffff, 0.55);
 fill.position.set(-2.5, 3.0, 4.0);
 scene.add(fill);
-const rim = new THREE.DirectionalLight(0xfff6ee, 0.35);
+const rim = new THREE.DirectionalLight(0xffffff, 0.28);
 rim.position.set(1.5, 4.0, 2.0);
 scene.add(rim);
 
-/** Soft stone slab: center presence, edges dissolve into the void color. */
-function makeStudioFloorTexture() {
-  const size = 512;
-  const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = size;
-  const ctx = canvas.getContext("2d");
-  // Match void (#e4e7ec) at the rim so fog + floor read as one volume.
-  const grad = ctx.createRadialGradient(
-    size * 0.5, size * 0.5, size * 0.08,
-    size * 0.5, size * 0.5, size * 0.72,
-  );
-  grad.addColorStop(0, "#d4d9e1");
-  grad.addColorStop(0.45, "#d9dee6");
-  grad.addColorStop(1, "#e4e7ec");
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, size, size);
-  // Very light grain — cheap, not a checker.
-  const grain = ctx.getImageData(0, 0, size, size);
-  const d = grain.data;
-  for (let i = 0; i < d.length; i += 16) {
-    const n = ((i * 1103515245 + 12345) >>> 16) & 7;
-    d[i] = Math.min(255, d[i] + n - 3);
-    d[i + 1] = Math.min(255, d[i + 1] + n - 3);
-    d[i + 2] = Math.min(255, d[i + 2] + n - 3);
-  }
-  ctx.putImageData(grain, 0, 0);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
-  tex.needsUpdate = true;
-  return tex;
-}
-
+// Flat matte floor — no map/grain; contact shadows do the work.
 const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(40, 40),
+  new THREE.PlaneGeometry(48, 48),
   new THREE.MeshStandardMaterial({
-    map: makeStudioFloorTexture(),
-    color: FLOOR_TINT,
-    roughness: 0.96,
+    color: FLOOR_COLOR,
+    roughness: 1.0,
     metalness: 0.0,
-    envMapIntensity: 0.0,
   }),
 );
 floor.receiveShadow = true;
 scene.add(floor);
 
-// Hairline measure grid — barely there; toggle still works.
-const grid = new THREE.GridHelper(10, 20, 0xb8c0cc, 0xcbd1da);
+// Optional measure grid — off by default for a clean product look.
+const grid = new THREE.GridHelper(10, 20, 0xd2d2d7, 0xe5e5ea);
 grid.rotation.x = Math.PI / 2;
 grid.position.z = 0.001;
 const gridMats = Array.isArray(grid.material) ? grid.material : [grid.material];
 for (const m of gridMats) {
   m.transparent = true;
-  m.opacity = 0.28;
+  m.opacity = 0.22;
   m.depthWrite = false;
 }
+grid.visible = false;
 scene.add(grid);
 
 const axes = new THREE.AxesHelper(0.2);
 axes.position.z = 0.012;
+axes.visible = false;
 scene.add(axes);
 
 const g1Root = new THREE.Group();
