@@ -89,43 +89,33 @@ scene.add(rim);
 
 /** Soft stone slab: center presence, edges dissolve into the void color. */
 function makeStudioFloorTexture() {
-  const size = 1024;
+  const size = 512;
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = size;
   const ctx = canvas.getContext("2d");
-  const img = ctx.createImageData(size, size);
-  const data = img.data;
-  const bg = { r: 0xe4, g: 0xe7, b: 0xec };
-  const mid = { r: 0xd2, g: 0xd7, b: 0xdf };
-  const cx = (size - 1) * 0.5;
-  const cy = (size - 1) * 0.5;
-  const maxR = Math.hypot(cx, cy);
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const i = (y * size + x) * 4;
-      const nx = (x - cx) / maxR;
-      const ny = (y - cy) / maxR;
-      const r = Math.hypot(nx, ny);
-      // Smoothstep falloff → edge matches background.
-      const edge = Math.min(1, Math.max(0, (r - 0.22) / 0.78));
-      const t = edge * edge * (3 - 2 * edge);
-      // Soft grain (not a grid/checker).
-      const n =
-        ((Math.sin(x * 0.37 + y * 0.19) * 43758.5453) % 1) * 2 - 1;
-      const grain = n * 4.5 * (1 - t);
-      const rr = mid.r + (bg.r - mid.r) * t + grain;
-      const gg = mid.g + (bg.g - mid.g) * t + grain;
-      const bb = mid.b + (bg.b - mid.b) * t + grain;
-      data[i] = Math.min(255, Math.max(0, rr));
-      data[i + 1] = Math.min(255, Math.max(0, gg));
-      data[i + 2] = Math.min(255, Math.max(0, bb));
-      data[i + 3] = 255;
-    }
+  // Match void (#e4e7ec) at the rim so fog + floor read as one volume.
+  const grad = ctx.createRadialGradient(
+    size * 0.5, size * 0.5, size * 0.08,
+    size * 0.5, size * 0.5, size * 0.72,
+  );
+  grad.addColorStop(0, "#d4d9e1");
+  grad.addColorStop(0.45, "#d9dee6");
+  grad.addColorStop(1, "#e4e7ec");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+  // Very light grain — cheap, not a checker.
+  const grain = ctx.getImageData(0, 0, size, size);
+  const d = grain.data;
+  for (let i = 0; i < d.length; i += 16) {
+    const n = ((i * 1103515245 + 12345) >>> 16) & 7;
+    d[i] = Math.min(255, d[i] + n - 3);
+    d[i + 1] = Math.min(255, d[i + 1] + n - 3);
+    d[i + 2] = Math.min(255, d[i + 2] + n - 3);
   }
-  ctx.putImageData(img, 0, 0);
+  ctx.putImageData(grain, 0, 0);
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 8;
+  tex.anisotropy = 4;
   tex.needsUpdate = true;
   return tex;
 }
@@ -147,9 +137,12 @@ scene.add(floor);
 const grid = new THREE.GridHelper(10, 20, 0xb8c0cc, 0xcbd1da);
 grid.rotation.x = Math.PI / 2;
 grid.position.z = 0.001;
-grid.material.transparent = true;
-grid.material.opacity = 0.28;
-grid.material.depthWrite = false;
+const gridMats = Array.isArray(grid.material) ? grid.material : [grid.material];
+for (const m of gridMats) {
+  m.transparent = true;
+  m.opacity = 0.28;
+  m.depthWrite = false;
+}
 scene.add(grid);
 
 const axes = new THREE.AxesHelper(0.2);
