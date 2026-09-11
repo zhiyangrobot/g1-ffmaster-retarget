@@ -1,11 +1,12 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-// Bright studio stage: light grey backdrop (less gloomy), soft checker floor, strong key.
+// Mist studio: floor and void share one cool-stone palette so the stage
+// dissolves into atmosphere (inspired by cohesive studio viewers, not a copy).
 const G1_Y = -0.85;
 const FF_MASTER_Y = 0.85;
-const STAGE_BG = 0xd8dce3; // light studio grey
-const GROUND = 0xb8bec8;
+const STAGE_BG = 0xe4e7ec;   // soft mist void
+const FLOOR_TINT = 0xd5dae2; // same family, a touch denser underfoot
 
 const el = {
   title: document.getElementById("title"),
@@ -59,13 +60,14 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(STAGE_BG);
+scene.fog = new THREE.Fog(STAGE_BG, 9, 26);
 const camera = new THREE.PerspectiveCamera(35, 1, 0.05, 80);
 camera.up.set(0, 0, 1);
 
-// Soft bright hemisphere + strong sun + fill so robots don't sink into shadow.
-scene.add(new THREE.HemisphereLight(0xffffff, 0xc5cad3, 1.35));
-const key = new THREE.DirectionalLight(0xffffff, 2.4);
-key.position.set(0.2, -0.3, 0.8).normalize().multiplyScalar(12);
+// Sky/ground of the hemisphere match the mist palette so lighting isn't a hard seam.
+scene.add(new THREE.HemisphereLight(0xf4f6f9, 0xc2c7d0, 1.15));
+const key = new THREE.DirectionalLight(0xffffff, 1.85);
+key.position.set(0.2, -0.35, 0.85).normalize().multiplyScalar(12);
 key.castShadow = true;
 key.shadow.mapSize.set(2048, 2048);
 key.shadow.camera.left = -5;
@@ -76,44 +78,64 @@ key.shadow.camera.near = 0.5;
 key.shadow.camera.far = 30;
 key.shadow.bias = -0.0002;
 key.shadow.normalBias = 0.02;
-key.shadow.radius = 4;
+key.shadow.radius = 5;
 scene.add(key);
-const fill = new THREE.DirectionalLight(0xffffff, 0.85);
+const fill = new THREE.DirectionalLight(0xeef2f7, 0.7);
 fill.position.set(-2.5, 3.0, 4.0);
 scene.add(fill);
-const rim = new THREE.DirectionalLight(0xfff8f0, 0.45);
+const rim = new THREE.DirectionalLight(0xfff6ee, 0.35);
 rim.position.set(1.5, 4.0, 2.0);
 scene.add(rim);
 
-// Light checkerboard — readable but not gloomy.
-function makeCheckerTexture() {
-  const size = 512;
+/** Soft stone slab: center presence, edges dissolve into the void color. */
+function makeStudioFloorTexture() {
+  const size = 1024;
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = size;
   const ctx = canvas.getContext("2d");
-  const cells = 16;
-  const cell = size / cells;
-  for (let y = 0; y < cells; y++) {
-    for (let x = 0; x < cells; x++) {
-      const dark = (x + y) % 2 === 0;
-      ctx.fillStyle = dark ? "#c5cad3" : "#e4e7ec";
-      ctx.fillRect(x * cell, y * cell, cell + 1, cell + 1);
+  const img = ctx.createImageData(size, size);
+  const data = img.data;
+  const bg = { r: 0xe4, g: 0xe7, b: 0xec };
+  const mid = { r: 0xd2, g: 0xd7, b: 0xdf };
+  const cx = (size - 1) * 0.5;
+  const cy = (size - 1) * 0.5;
+  const maxR = Math.hypot(cx, cy);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const i = (y * size + x) * 4;
+      const nx = (x - cx) / maxR;
+      const ny = (y - cy) / maxR;
+      const r = Math.hypot(nx, ny);
+      // Smoothstep falloff → edge matches background.
+      const edge = Math.min(1, Math.max(0, (r - 0.22) / 0.78));
+      const t = edge * edge * (3 - 2 * edge);
+      // Soft grain (not a grid/checker).
+      const n =
+        ((Math.sin(x * 0.37 + y * 0.19) * 43758.5453) % 1) * 2 - 1;
+      const grain = n * 4.5 * (1 - t);
+      const rr = mid.r + (bg.r - mid.r) * t + grain;
+      const gg = mid.g + (bg.g - mid.g) * t + grain;
+      const bb = mid.b + (bg.b - mid.b) * t + grain;
+      data[i] = Math.min(255, Math.max(0, rr));
+      data[i + 1] = Math.min(255, Math.max(0, gg));
+      data[i + 2] = Math.min(255, Math.max(0, bb));
+      data[i + 3] = 255;
     }
   }
+  ctx.putImageData(img, 0, 0);
   const tex = new THREE.CanvasTexture(canvas);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(8, 8);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 8;
+  tex.needsUpdate = true;
   return tex;
 }
 
 const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(20, 20),
+  new THREE.PlaneGeometry(40, 40),
   new THREE.MeshStandardMaterial({
-    map: makeCheckerTexture(),
-    color: 0xffffff,
-    roughness: 0.9,
+    map: makeStudioFloorTexture(),
+    color: FLOOR_TINT,
+    roughness: 0.96,
     metalness: 0.0,
     envMapIntensity: 0.0,
   }),
@@ -121,9 +143,13 @@ const floor = new THREE.Mesh(
 floor.receiveShadow = true;
 scene.add(floor);
 
-const grid = new THREE.GridHelper(8, 16, 0x9aa3b0, 0xc0c6d0);
+// Hairline measure grid — barely there; toggle still works.
+const grid = new THREE.GridHelper(10, 20, 0xb8c0cc, 0xcbd1da);
 grid.rotation.x = Math.PI / 2;
 grid.position.z = 0.001;
+grid.material.transparent = true;
+grid.material.opacity = 0.28;
+grid.material.depthWrite = false;
 scene.add(grid);
 
 const axes = new THREE.AxesHelper(0.2);
