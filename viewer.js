@@ -95,16 +95,18 @@ const floor = new THREE.Mesh(
 floor.receiveShadow = true;
 scene.add(floor);
 
-// Light grey grid on the white slab (toggle still works).
-const grid = new THREE.GridHelper(12, 24, 0xc7c7cc, 0xdedee3);
+// Clear measure grid on the white slab (toggle still works).
+const grid = new THREE.GridHelper(16, 32, 0x8e8e93, 0xb0b0b8);
 grid.rotation.x = Math.PI / 2;
-grid.position.z = 0.002;
+grid.position.z = 0.003;
 const gridMats = Array.isArray(grid.material) ? grid.material : [grid.material];
 for (const m of gridMats) {
-  m.transparent = true;
-  m.opacity = 0.55;
+  m.transparent = false;
+  m.opacity = 1;
   m.depthWrite = false;
+  m.toneMapped = false;
 }
+grid.renderOrder = 1;
 grid.visible = true;
 scene.add(grid);
 
