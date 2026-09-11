@@ -1,11 +1,11 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-// Apple product studio: same pale canvas as the page; floor is invisible
-// except for soft contact shadows (ShadowMaterial).
+// Bright studio: white floor + light measure grid (SEED-like, not a copy).
 const G1_Y = -0.85;
 const FF_MASTER_Y = 0.85;
 const STAGE_BG = 0xf5f5f7;
+const FLOOR_COLOR = 0xffffff;
 
 const el = {
   title: document.getElementById("title"),
@@ -59,14 +59,13 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(STAGE_BG);
-scene.fog = new THREE.Fog(STAGE_BG, 18, 42);
+scene.fog = new THREE.Fog(STAGE_BG, 16, 40);
 const camera = new THREE.PerspectiveCamera(35, 1, 0.05, 80);
 camera.up.set(0, 0, 1);
 
-// Bright, even product lighting — high fill so nothing reads muddy.
-scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-scene.add(new THREE.HemisphereLight(0xffffff, 0xf0f0f2, 0.85));
-const key = new THREE.DirectionalLight(0xffffff, 1.15);
+scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+scene.add(new THREE.HemisphereLight(0xffffff, 0xf0f0f2, 0.9));
+const key = new THREE.DirectionalLight(0xffffff, 1.2);
 key.position.set(0.3, -0.45, 1.0).normalize().multiplyScalar(14);
 key.castShadow = true;
 key.shadow.mapSize.set(2048, 2048);
@@ -80,29 +79,33 @@ key.shadow.bias = -0.00015;
 key.shadow.normalBias = 0.03;
 key.shadow.radius = 8;
 scene.add(key);
-const fill = new THREE.DirectionalLight(0xffffff, 0.45);
+const fill = new THREE.DirectionalLight(0xffffff, 0.5);
 fill.position.set(-3.0, 2.5, 5.0);
 scene.add(fill);
 
-// Invisible bright floor — only soft shadows appear (classic product viz).
+// White floor + soft contact shadows.
 const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(48, 48),
-  new THREE.ShadowMaterial({ opacity: 0.14 }),
+  new THREE.PlaneGeometry(40, 40),
+  new THREE.MeshStandardMaterial({
+    color: FLOOR_COLOR,
+    roughness: 1.0,
+    metalness: 0.0,
+  }),
 );
 floor.receiveShadow = true;
 scene.add(floor);
 
-// Optional measure grid — off by default.
-const grid = new THREE.GridHelper(10, 20, 0xd2d2d7, 0xe8e8ed);
+// Light grey grid on the white slab (toggle still works).
+const grid = new THREE.GridHelper(12, 24, 0xc7c7cc, 0xdedee3);
 grid.rotation.x = Math.PI / 2;
-grid.position.z = 0.001;
+grid.position.z = 0.002;
 const gridMats = Array.isArray(grid.material) ? grid.material : [grid.material];
 for (const m of gridMats) {
   m.transparent = true;
-  m.opacity = 0.18;
+  m.opacity = 0.55;
   m.depthWrite = false;
 }
-grid.visible = false;
+grid.visible = true;
 scene.add(grid);
 
 const axes = new THREE.AxesHelper(0.2);
