@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 // Bright studio stage: light grey backdrop (less gloomy), soft checker floor, strong key.
 const G1_Y = -0.85;
@@ -309,26 +310,28 @@ function resize() {
   camera.updateProjectionMatrix();
 }
 
-// Z-up orbit: drag moves the scene with the cursor (grab), not inverted turntable.
-const orbit = {
-  target: new THREE.Vector3(0, 0, 0.85),
-  radius: 4.2,
-  yaw: 0.55,   // around world Z
-  pitch: 0.55, // elevation from XY plane
-  dragging: false,
-  lastX: 0,
-  lastY: 0,
-};
+// Same orbit feel as SEED viewer (https://seed-viewer.bones.studio/):
+// stock Three.js OrbitControls — drag direction moves the model with the cursor.
+const controls = new OrbitControls(camera, el.canvas);
+controls.target.set(0, 0, 0.85);
+controls.enableDamping = false;
+controls.rotateSpeed = 1.0;
+controls.minDistance = 1.4;
+controls.maxDistance = 14;
+// Elevation limits ≈ our old pitch range [-0.15, 1.4] under Z-up.
+controls.minPolarAngle = Math.PI / 2 - 1.4;
+controls.maxPolarAngle = Math.PI / 2 - (-0.15);
+controls.update();
 
-function syncCamera() {
-  const cp = Math.cos(orbit.pitch);
-  const sp = Math.sin(orbit.pitch);
+function placeOrbit(yaw, pitch, radius) {
+  const cp = Math.cos(pitch);
+  const sp = Math.sin(pitch);
   camera.position.set(
-    orbit.target.x + orbit.radius * cp * Math.cos(orbit.yaw),
-    orbit.target.y + orbit.radius * cp * Math.sin(orbit.yaw),
-    orbit.target.z + orbit.radius * sp,
+    controls.target.x + radius * cp * Math.cos(yaw),
+    controls.target.y + radius * cp * Math.sin(yaw),
+    controls.target.z + radius * sp,
   );
-  camera.lookAt(orbit.target);
+  controls.update();
 }
 
 function setView(name) {
@@ -342,39 +345,8 @@ function setView(name) {
     persp: { yaw: 0.55, pitch: 0.55, r: d },
   };
   const v = map[name] || map.persp;
-  orbit.radius = v.r;
-  orbit.yaw = v.yaw;
-  orbit.pitch = v.pitch;
-  syncCamera();
+  placeOrbit(v.yaw, v.pitch, v.r);
 }
-
-el.canvas.addEventListener("pointerdown", (e) => {
-  orbit.dragging = true;
-  orbit.lastX = e.clientX;
-  orbit.lastY = e.clientY;
-  el.canvas.setPointerCapture(e.pointerId);
-});
-el.canvas.addEventListener("pointerup", (e) => {
-  orbit.dragging = false;
-  try { el.canvas.releasePointerCapture(e.pointerId); } catch (_) {}
-});
-el.canvas.addEventListener("pointermove", (e) => {
-  if (!orbit.dragging) return;
-  const dx = e.clientX - orbit.lastX;
-  const dy = e.clientY - orbit.lastY;
-  orbit.lastX = e.clientX;
-  orbit.lastY = e.clientY;
-  // Grab the scene: content follows the cursor (opposite of OrbitControls).
-  // Drag left → content left; drag down → content down.
-  orbit.yaw += dx * 0.005;
-  orbit.pitch = Math.min(Math.max(orbit.pitch - dy * 0.005, -0.15), 1.4);
-  syncCamera();
-});
-el.canvas.addEventListener("wheel", (e) => {
-  e.preventDefault();
-  orbit.radius = Math.min(Math.max(orbit.radius * (e.deltaY > 0 ? 1.08 : 0.92), 1.4), 14);
-  syncCamera();
-}, { passive: false });
 
 function renderTable() {
   el.clipBody.innerHTML = "";
@@ -526,7 +498,7 @@ el.speed.addEventListener("input", () => {
 el.filter.addEventListener("input", applyFilter);
 el.btnGrid.addEventListener("click", () => { grid.visible = !grid.visible; });
 el.btnCenter.addEventListener("click", () => {
-  orbit.target.set(0, 0, 0.85);
+  controls.target.set(0, 0, 0.85);
   setView("persp");
 });
 document.querySelectorAll("#view-cube button").forEach((b) => {
@@ -559,7 +531,7 @@ window.addEventListener("resize", resize);
 
 async function boot() {
   resize();
-  syncCamera();
+  setView("persp");
   // Always show product name; ignore stale cached manifest titles.
   const brandTitle = "Unitree G1 → FF Master Retargeter";
   el.title.textContent = brandTitle;
