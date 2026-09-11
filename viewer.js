@@ -309,31 +309,42 @@ function resize() {
   camera.updateProjectionMatrix();
 }
 
+// Z-up orbit: drag moves the scene with the cursor (grab), not inverted turntable.
 const orbit = {
   target: new THREE.Vector3(0, 0, 0.85),
-  spherical: new THREE.Spherical(4.2, 1.15, 0.9),
+  radius: 4.2,
+  yaw: 0.55,   // around world Z
+  pitch: 0.55, // elevation from XY plane
   dragging: false,
   lastX: 0,
   lastY: 0,
 };
 
 function syncCamera() {
-  camera.position.copy(orbit.target).add(new THREE.Vector3().setFromSpherical(orbit.spherical));
+  const cp = Math.cos(orbit.pitch);
+  const sp = Math.sin(orbit.pitch);
+  camera.position.set(
+    orbit.target.x + orbit.radius * cp * Math.cos(orbit.yaw),
+    orbit.target.y + orbit.radius * cp * Math.sin(orbit.yaw),
+    orbit.target.z + orbit.radius * sp,
+  );
   camera.lookAt(orbit.target);
 }
 
 function setView(name) {
   const d = 4.2;
   const map = {
-    front: { theta: Math.PI / 2, phi: Math.PI / 2, r: d },
-    back: { theta: -Math.PI / 2, phi: Math.PI / 2, r: d },
-    left: { theta: Math.PI, phi: Math.PI / 2, r: d },
-    right: { theta: 0, phi: Math.PI / 2, r: d },
-    top: { theta: Math.PI / 2, phi: 0.18, r: d },
-    persp: { theta: 0.9, phi: 1.15, r: d },
+    front: { yaw: -Math.PI / 2, pitch: 0.22, r: d },
+    back: { yaw: Math.PI / 2, pitch: 0.22, r: d },
+    left: { yaw: Math.PI, pitch: 0.22, r: d },
+    right: { yaw: 0, pitch: 0.22, r: d },
+    top: { yaw: -Math.PI / 2, pitch: 1.35, r: d },
+    persp: { yaw: 0.55, pitch: 0.55, r: d },
   };
   const v = map[name] || map.persp;
-  orbit.spherical.set(v.r, v.phi, v.theta);
+  orbit.radius = v.r;
+  orbit.yaw = v.yaw;
+  orbit.pitch = v.pitch;
   syncCamera();
 }
 
@@ -353,13 +364,14 @@ el.canvas.addEventListener("pointermove", (e) => {
   const dy = e.clientY - orbit.lastY;
   orbit.lastX = e.clientX;
   orbit.lastY = e.clientY;
-  orbit.spherical.theta -= dx * 0.005;
-  orbit.spherical.phi = Math.min(Math.max(orbit.spherical.phi - dy * 0.005, 0.12), Math.PI - 0.12);
+  // Grab semantics: drag left/down → content moves left/down.
+  orbit.yaw -= dx * 0.005;
+  orbit.pitch = Math.min(Math.max(orbit.pitch + dy * 0.005, -0.15), 1.4);
   syncCamera();
 });
 el.canvas.addEventListener("wheel", (e) => {
   e.preventDefault();
-  orbit.spherical.radius = Math.min(Math.max(orbit.spherical.radius * (e.deltaY > 0 ? 1.08 : 0.92), 1.4), 14);
+  orbit.radius = Math.min(Math.max(orbit.radius * (e.deltaY > 0 ? 1.08 : 0.92), 1.4), 14);
   syncCamera();
 }, { passive: false });
 
