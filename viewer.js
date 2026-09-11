@@ -1,11 +1,11 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-// Apple-like product studio: bright near-white void + seamless matte floor.
+// Apple product studio: same pale canvas as the page; floor is invisible
+// except for soft contact shadows (ShadowMaterial).
 const G1_Y = -0.85;
 const FF_MASTER_Y = 0.85;
-const STAGE_BG = 0xf5f5f7;   // Apple system light grey
-const FLOOR_COLOR = 0xf0f0f2; // barely darker than void — almost one surface
+const STAGE_BG = 0xf5f5f7;
 
 const el = {
   title: document.getElementById("title"),
@@ -59,14 +59,15 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(STAGE_BG);
-scene.fog = new THREE.Fog(STAGE_BG, 14, 36);
+scene.fog = new THREE.Fog(STAGE_BG, 18, 42);
 const camera = new THREE.PerspectiveCamera(35, 1, 0.05, 80);
 camera.up.set(0, 0, 1);
 
-// Soft, even product lighting — bright, low drama.
-scene.add(new THREE.HemisphereLight(0xffffff, 0xe8e8ed, 1.25));
-const key = new THREE.DirectionalLight(0xffffff, 1.55);
-key.position.set(0.25, -0.4, 0.9).normalize().multiplyScalar(12);
+// Bright, even product lighting — high fill so nothing reads muddy.
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+scene.add(new THREE.HemisphereLight(0xffffff, 0xf0f0f2, 0.85));
+const key = new THREE.DirectionalLight(0xffffff, 1.15);
+key.position.set(0.3, -0.45, 1.0).normalize().multiplyScalar(14);
 key.castShadow = true;
 key.shadow.mapSize.set(2048, 2048);
 key.shadow.camera.left = -5;
@@ -75,37 +76,30 @@ key.shadow.camera.top = 5;
 key.shadow.camera.bottom = -5;
 key.shadow.camera.near = 0.5;
 key.shadow.camera.far = 30;
-key.shadow.bias = -0.0002;
-key.shadow.normalBias = 0.025;
-key.shadow.radius = 6;
+key.shadow.bias = -0.00015;
+key.shadow.normalBias = 0.03;
+key.shadow.radius = 8;
 scene.add(key);
-const fill = new THREE.DirectionalLight(0xffffff, 0.55);
-fill.position.set(-2.5, 3.0, 4.0);
+const fill = new THREE.DirectionalLight(0xffffff, 0.45);
+fill.position.set(-3.0, 2.5, 5.0);
 scene.add(fill);
-const rim = new THREE.DirectionalLight(0xffffff, 0.28);
-rim.position.set(1.5, 4.0, 2.0);
-scene.add(rim);
 
-// Flat matte floor — no map/grain; contact shadows do the work.
+// Invisible bright floor — only soft shadows appear (classic product viz).
 const floor = new THREE.Mesh(
   new THREE.PlaneGeometry(48, 48),
-  new THREE.MeshStandardMaterial({
-    color: FLOOR_COLOR,
-    roughness: 1.0,
-    metalness: 0.0,
-  }),
+  new THREE.ShadowMaterial({ opacity: 0.14 }),
 );
 floor.receiveShadow = true;
 scene.add(floor);
 
-// Optional measure grid — off by default for a clean product look.
-const grid = new THREE.GridHelper(10, 20, 0xd2d2d7, 0xe5e5ea);
+// Optional measure grid — off by default.
+const grid = new THREE.GridHelper(10, 20, 0xd2d2d7, 0xe8e8ed);
 grid.rotation.x = Math.PI / 2;
 grid.position.z = 0.001;
 const gridMats = Array.isArray(grid.material) ? grid.material : [grid.material];
 for (const m of gridMats) {
   m.transparent = true;
-  m.opacity = 0.22;
+  m.opacity = 0.18;
   m.depthWrite = false;
 }
 grid.visible = false;
